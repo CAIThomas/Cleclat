@@ -2,16 +2,16 @@ services:
 
   db:
     image: postgres:16-alpine
-    container_name: esme_db
+    container_name: cleclat_db          # Nouveau nom unique pour éviter conflit
     restart: unless-stopped
     environment:
       POSTGRES_USER: myuser
       POSTGRES_PASSWORD: mot_de_passe
-      POSTGRES_DB: esme_inge
+      POSTGRES_DB: cleclat              # Nom de la base cleclat
     ports:
-      - "5432:5432"
+      - "5433:5432"                     # Port local modifié pour éviter conflit
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - cleclat_postgres_data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U myuser"]
       interval: 10s
@@ -22,15 +22,15 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: esme_backend
+    container_name: cleclat_backend     # Nouveau nom backend pour cohérence
     restart: unless-stopped
     depends_on:
       db:
         condition: service_healthy
     environment:
-      DATABASE_URL: postgresql://myuser:mot_de_passe@db:5432/esme_inge
+      DATABASE_URL: postgresql://myuser:mot_de_passe@db:5432/cleclat
     ports:
-      - "5009:5000"
+      - "5010:5000"                     # Port local modifié pour éviter conflit
     volumes:
       - ./backend:/app:ro
       - ./backend/migrations:/app/migrations
@@ -44,13 +44,13 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-    container_name: esme_frontend
+    container_name: cleclat_frontend   # Nouveau nom frontend cohérent
     restart: unless-stopped
     depends_on:
       backend:
         condition: service_started
     ports:
-      - "3000:80"
+      - "3001:80"                      # Port modifié pour éviter conflit avec ancien frontend
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:80"]
       interval: 10s
@@ -58,4 +58,4 @@ services:
       retries: 3
 
 volumes:
-  postgres_data:
+  cleclat_postgres_data:

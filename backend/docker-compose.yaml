@@ -1,30 +1,29 @@
-
 services:
   db_esme:
     image: postgres:13
-    container_name: db_esme
+    container_name: cleclat_db   # <- nouveau nom unique ici
     restart: always
     environment:
       POSTGRES_USER: myuser
       POSTGRES_PASSWORD: mot_de_passe
-      POSTGRES_DB: esme_inge
+      POSTGRES_DB: cleclat
     ports:
-      - "5432:5432"
+      - "5433:5432"   # Change aussi le port local si tu veux éviter conflit avec l'ancien
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
   flask_app_esme:
     build: .
-    container_name: flask_app_esme
+    container_name: flask_app_cleclat  # Aussi ici pour garder cohérence et éviter conflit
     depends_on:
       - db_esme
     environment:
-      - DATABASE_URL=postgresql://myuser:mot_de_passe@db_esme:5432/esme_inge
+      - DATABASE_URL=postgresql://myuser:mot_de_passe@cleclat_db:5432/cleclat
     ports:
-      - "5009:5000"
+      - "5010:5000"  # Change aussi le port local si besoin
     volumes:
       - .:/app
-      - ./migrations:/app/migrations  # Persistance des fichiers Alembic
+      - ./migrations:/app/migrations
 
 volumes:
-  postgres_data:  # Volume Docker nommé pour la base de données
+  postgres_data:

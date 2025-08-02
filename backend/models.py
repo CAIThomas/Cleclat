@@ -1,56 +1,56 @@
+# -*- coding: utf-8 -*-
+
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import relationship
+from sqlalchemy.dialects.postgresql import JSON
+from datetime import datetime
 
 db = SQLAlchemy()
 
-# 🔸 Association : emprunts
-class UserBook(db.Model):
-    __tablename__ = 'user_book'
+# 🔁 Table d'association : historique de location
+class UserAppartement(db.Model):
+    __tablename__ = 'user_appartement'
 
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    book_id = db.Column(db.Integer, db.ForeignKey('book.id'), nullable=False)
-    borrow_date = db.Column(db.DateTime, nullable=False)
-    return_date = db.Column(db.DateTime)
+    appartement_id = db.Column(db.Integer, db.ForeignKey('appartement.id'), nullable=False)
+    rented_at = db.Column(db.DateTime, default=datetime.utcnow)
+    returned_at = db.Column(db.DateTime, nullable=True)
 
-    user = relationship("User", back_populates="user_books")
-    book = relationship("Book", back_populates="user_books")
+    user = relationship("User", back_populates="user_appartements")
+    appartement = relationship("Appartement", back_populates="user_appartements")
 
-# 🔹 Livre
-class Book(db.Model):
-    __tablename__ = 'book'
+class Appartement(db.Model):
+    __tablename__ = 'appartement'
 
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(100), nullable=False)
-    author = db.Column(db.String(100), nullable=False)
-    published_at = db.Column(db.DateTime)
+    address = db.Column(db.String(200), nullable=False)
+    description = db.Column(db.Text, nullable=True)
+    photos = db.Column(JSON, nullable=True)  # liste de strings (URLs)
+    owner_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
 
-    user_books = relationship("UserBook", back_populates="book", cascade="all, delete-orphan")
-    borrowers = relationship("User", secondary="user_book", viewonly=True)
-
+    owner = relationship("User", back_populates="owned_appartements")
+    user_appartements = relationship("UserAppartement", back_populates="appartement", cascade="all, delete-orphan")
 
 class User(db.Model):
     __tablename__ = 'user'
+
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(120), unique=True, nullable=False)
     first_name = db.Column(db.String(50))
     last_name = db.Column(db.String(50))
     birth_date = db.Column(db.Date)
-    password=db.Column(db.String(20), unique=True, nullable=False)
-    subscription_id = db.Column(db.Integer, db.ForeignKey('subscription.id'))
-    subscription = db.relationship('Subscription')
+    password = db.Column(db.String(200), nullable=False)
 
-    user_books = db.relationship("UserBook", back_populates="user", cascade="all, delete-orphan")
-    borrowed_books = db.relationship("Book", secondary="user_book", viewonly=True)
+    # Rôle : 'locataire', 'proprietaire', ...
+    role = db.Column(db.String(20), nullable=False, default='locataire')
 
-# 📌 Abonnement
+    # Appartements possédés (propriétaire)
+    owned_appartements = relationship("Appartement", back_populates="owner")
 
-class Subscription(db.Model):
-    __tablename__ = 'subscription'
+    # Locations (historique)
+    user_appartements = relationship("UserAppartement", back_populates="user", cascade="all, delete-orphan")
 
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(50), unique=True, nullable=False)  # basic, standard, premium
-    max_books = db.Column(db.Integer, nullable=False)  # 1, 3, -1
-
-    users = db.relationship('User', back_populates='subscription')
-
+    # Appartements actuellement loués (view only)
+    rented_appartements = relationship("Appartement", secondary="user_appartement", viewonly=True)
